@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 2021-04-12
+- Updated location error messages to be more suggestive.
+
 ## [4.0.1-OS3]
 ### Fixes
 - Method getLocation is no longer called on cancelled permissions request [RNMT-4280](https://outsystemsrd.atlassian.net/browse/RNMT-4280)
