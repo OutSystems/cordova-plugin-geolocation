@@ -9,7 +9,7 @@ public enum LocationError {
     GOOGLE_SERVICES_ERROR (102, "Google Play Services error"),
     SERIALIZATION_ERROR (103, "Location result serialization error"),
     WATCH_ID_NOT_FOUND (104, "Watch id not found"),
-    LOCATION_SETTINGS_ERROR_RESOLVABLE (105, "Location services are disabled"),
+    LOCATION_SETTINGS_ERROR_RESOLVABLE (105, "Current location settings can not satisfy this request"),
     LOCATION_SETTINGS_ERROR (106, "Location settings error"),
     LOCATION_NULL (107, "Could not retrieve location");
 
