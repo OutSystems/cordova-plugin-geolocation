@@ -1,6 +1,7 @@
 package org.apache.cordova.geolocation;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.Manifest;
@@ -57,7 +58,14 @@ public class Geolocation extends CordovaPlugin implements OnLocationResultEventL
         }
 
         if ("getLocation".equals(action)) {
-            int id = args.getString(3).hashCode();
+
+            int idHashCode = args.getString(3).hashCode();
+
+            // the hashCode can sometimes be negative
+            // we should avoid it to use it as the requestCode for startResolutionForResult,
+            // which doesn't work if we pass it a negative value
+            int id = idHashCode < 0 ? - idHashCode : idHashCode;
+
             LocationContext lc = new LocationContext(id, LocationContext.Type.RETRIEVAL, args, callbackContext, this);
             locationContexts.put(id, lc);
 
@@ -281,12 +289,16 @@ public class Geolocation extends CordovaPlugin implements OnLocationResultEventL
                     // Location settings are not satisfied, but this can be fixed
                     // by showing the user a dialog.
                     try {
+                        // to get the response for the resolution in onActivityResult
+                        setActivityCallback();
+
                         // Show the dialog by calling startResolutionForResult(),
                         // and check the result in onActivityResult(). We should do this but it is not working
                         // so for now we simply call for location updates directly, after presenting the dialog
+
                         ResolvableApiException resolvable = (ResolvableApiException) e;
-                        resolvable.startResolutionForResult(cordova.getActivity(),
-                                REQUEST_CHECK_SETTINGS);
+                        resolvable.startResolutionForResult(cordova.getActivity(), /*REQUEST_CHECK_SETTINGS*/locationContext.getId());
+
                         requestLocationUpdates(locationContext, request);
                     } catch (IntentSender.SendIntentException sendEx) {
                         // Ignore the error.
@@ -303,4 +315,28 @@ public class Geolocation extends CordovaPlugin implements OnLocationResultEventL
         task.addOnSuccessListener(checkLocationSettingsOnSuccess);
         task.addOnFailureListener(checkLocationSettingsOnFailure);
     }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent intent) {
+        super.onActivityResult(requestCode, resultCode, intent);
+
+        LocationContext lc = locationContexts.get(requestCode);
+
+        switch (resultCode) {
+            case 0: {
+                PluginResult result = new PluginResult(PluginResult.Status.ERROR, LocationError.LOCATION_PERMISSION_DENIED.toJSON());
+                lc.getCallbackContext().sendPluginResult(result);
+                locationContexts.remove(lc.getId());
+            }
+            case -1: {
+                // request location updates because location was enabled
+            }
+        }
+
+    }
+
+    private void setActivityCallback() {
+        cordova.setActivityResultCallback(this);
+    }
+
 }
