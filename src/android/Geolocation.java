@@ -64,8 +64,7 @@ public class Geolocation extends CordovaPlugin implements OnLocationResultEventL
             // the hashCode can sometimes be negative
             // we should avoid it to use it as the requestCode for startResolutionForResult,
             // which doesn't work if we pass it a negative value
-            int idHashCode = args.getString(3).hashCode();
-            int id = idHashCode < 0 ? - idHashCode : idHashCode;
+            int id = getPositiveHashCode(args.getString(3));
             LocationContext lc = new LocationContext(id, LocationContext.Type.RETRIEVAL, args, callbackContext, this);
             locationContexts.put(id, lc);
 
@@ -80,8 +79,7 @@ public class Geolocation extends CordovaPlugin implements OnLocationResultEventL
             // the hashCode can sometimes be negative
             // we should avoid it to use it as the requestCode for startResolutionForResult,
             // which doesn't work if we pass it a negative value
-            int idHashCode = args.getString(0).hashCode();
-            int id = idHashCode < 0 ? - idHashCode : idHashCode;
+            int id = getPositiveHashCode(args.getString(0));
             LocationContext lc = new LocationContext(id, LocationContext.Type.UPDATE, args, callbackContext, this);
             locationContexts.put(id, lc);
 
@@ -213,8 +211,7 @@ public class Geolocation extends CordovaPlugin implements OnLocationResultEventL
 
             // watch was created possibly turning the negative hashCode into a positive value
             // so we must do the same to get the correct LocationContext
-            int idHashCode = id.hashCode();
-            int requestId = idHashCode < 0 ? - idHashCode : idHashCode;
+            int requestId = getPositiveHashCode(id);
             LocationContext lc = locationContexts.get(requestId);
 
             if(lc == null) {
@@ -346,8 +343,14 @@ public class Geolocation extends CordovaPlugin implements OnLocationResultEventL
         }
     }
 
-    private void setActivityCallback() {
-        cordova.setActivityResultCallback(this);
+    /**
+     * Gets an hashCode from a String, making it a positive value if necessary
+     * @param id String to be hashed
+     * @return hashCode as a positive integer value
+     */
+    private int getPositiveHashCode(String id) {
+        int idHashCode = id.hashCode();
+        return idHashCode < 0 ? - idHashCode : idHashCode;
     }
 
 }
