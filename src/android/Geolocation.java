@@ -210,10 +210,9 @@ public class Geolocation extends CordovaPlugin implements OnLocationResultEventL
         String id = args.optString(0);
 
         if(id != null) {
-
-            // the hashCode can sometimes be negative
-            // we should avoid it to use it as the requestCode for startResolutionForResult,
-            // which doesn't work if we pass it a negative value
+            
+            // watch was created possibly turning the negative hashCode into a positive value
+            // so we must do the same to get the correct LocationContext
             int idHashCode = id.hashCode();
             int requestId = idHashCode < 0 ? - idHashCode : idHashCode;
             LocationContext lc = locationContexts.get(requestId);
