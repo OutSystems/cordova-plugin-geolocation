@@ -39,6 +39,7 @@ public class Geolocation extends CordovaPlugin implements OnLocationResultEventL
 
     private SparseArray<LocationContext> locationContexts;
     private FusedLocationProviderClient fusedLocationClient;
+    private LocationRequest requestForResolvable;
 
     protected static final int REQUEST_CHECK_SETTINGS = 0x1;
 
@@ -59,11 +60,10 @@ public class Geolocation extends CordovaPlugin implements OnLocationResultEventL
 
         if ("getLocation".equals(action)) {
 
-            int idHashCode = args.getString(3).hashCode();
-
             // the hashCode can sometimes be negative
             // we should avoid it to use it as the requestCode for startResolutionForResult,
             // which doesn't work if we pass it a negative value
+            int idHashCode = args.getString(3).hashCode();
             int id = idHashCode < 0 ? - idHashCode : idHashCode;
 
             LocationContext lc = new LocationContext(id, LocationContext.Type.RETRIEVAL, args, callbackContext, this);
@@ -76,7 +76,12 @@ public class Geolocation extends CordovaPlugin implements OnLocationResultEventL
             }
 
         } else if ("addWatch".equals(action)) {
-            int id = args.getString(0).hashCode();
+
+            // the hashCode can sometimes be negative
+            // we should avoid it to use it as the requestCode for startResolutionForResult,
+            // which doesn't work if we pass it a negative value
+            int idHashCode = args.getString(0).hashCode();
+            int id = idHashCode < 0 ? - idHashCode : idHashCode;
             LocationContext lc = new LocationContext(id, LocationContext.Type.UPDATE, args, callbackContext, this);
             locationContexts.put(id, lc);
 
@@ -205,7 +210,12 @@ public class Geolocation extends CordovaPlugin implements OnLocationResultEventL
         String id = args.optString(0);
 
         if(id != null) {
-            int requestId = id.hashCode();
+            
+            // the hashCode can sometimes be negative
+            // we should avoid it to use it as the requestCode for startResolutionForResult,
+            // which doesn't work if we pass it a negative value
+            int idHashCode = id.hashCode();
+            int requestId = idHashCode < 0 ? - idHashCode : idHashCode;
             LocationContext lc = locationContexts.get(requestId);
 
             if(lc == null) {
@@ -292,14 +302,14 @@ public class Geolocation extends CordovaPlugin implements OnLocationResultEventL
                         // to get the response for the resolution in onActivityResult
                         setActivityCallback();
 
+                        // to use this 'request' in onActivityResult
+                        requestForResolvable = request;
+
                         // Show the dialog by calling startResolutionForResult(),
                         // and check the result in onActivityResult(). We should do this but it is not working
                         // so for now we simply call for location updates directly, after presenting the dialog
-
                         ResolvableApiException resolvable = (ResolvableApiException) e;
-                        resolvable.startResolutionForResult(cordova.getActivity(), /*REQUEST_CHECK_SETTINGS*/locationContext.getId());
-
-                        requestLocationUpdates(locationContext, request);
+                        resolvable.startResolutionForResult(cordova.getActivity(), locationContext.getId());
                     } catch (IntentSender.SendIntentException sendEx) {
                         // Ignore the error.
                     }
@@ -326,10 +336,14 @@ public class Geolocation extends CordovaPlugin implements OnLocationResultEventL
             case 0: {
                 PluginResult result = new PluginResult(PluginResult.Status.ERROR, LocationError.LOCATION_PERMISSION_DENIED.toJSON());
                 lc.getCallbackContext().sendPluginResult(result);
-                locationContexts.remove(lc.getId());
+                locationContexts.delete(lc.getId());
             }
             case -1: {
                 // request location updates because location was enabled
+                if (requestForResolvable != null) {
+                    requestLocationUpdates(lc, requestForResolvable);
+                    requestForResolvable = null;
+                }
             }
         }
 
