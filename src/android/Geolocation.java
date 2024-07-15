@@ -1,6 +1,7 @@
 package org.apache.cordova.geolocation;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
@@ -210,7 +211,7 @@ public class Geolocation extends CordovaPlugin implements OnLocationResultEventL
         String id = args.optString(0);
 
         if(id != null) {
-            
+
             // watch was created possibly turning the negative hashCode into a positive value
             // so we must do the same to get the correct LocationContext
             int idHashCode = id.hashCode();
@@ -331,12 +332,12 @@ public class Geolocation extends CordovaPlugin implements OnLocationResultEventL
         LocationContext lc = locationContexts.get(requestCode);
 
         switch (resultCode) {
-            case 0: {
+            case Activity.RESULT_CANCELED: {
                 PluginResult result = new PluginResult(PluginResult.Status.ERROR, LocationError.LOCATION_ENABLE_REQUEST_DENIED.toJSON());
                 lc.getCallbackContext().sendPluginResult(result);
                 locationContexts.delete(lc.getId());
             }
-            case -1: {
+            case Activity.RESULT_OK: {
                 // request location updates because location was enabled
                 if (requestForResolvable != null) {
                     requestLocationUpdates(lc, requestForResolvable);
