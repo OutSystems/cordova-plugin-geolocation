@@ -11,7 +11,8 @@ public enum LocationError {
     WATCH_ID_NOT_FOUND (104, "Watch id not found"),
     LOCATION_SETTINGS_ERROR_RESOLVABLE (105, "Current location settings can not satisfy this request"),
     LOCATION_SETTINGS_ERROR (106, "Location settings error"),
-    LOCATION_NULL (107, "Could not retrieve location");
+    LOCATION_NULL (107, "Could not retrieve location"),
+    LOCATION_ENABLE_REQUEST_DENIED (108, "Request to enable location denied");
 
     private final int code;
     private final String message;
