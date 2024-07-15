@@ -304,9 +304,8 @@ public class Geolocation extends CordovaPlugin implements OnLocationResultEventL
                         // to use this 'request' in onActivityResult
                         requestForResolvable = request;
 
-                        // Show the dialog by calling startResolutionForResult(),
-                        // and check the result in onActivityResult(). We should do this but it is not working
-                        // so for now we simply call for location updates directly, after presenting the dialog
+                        // Show the dialog to enable location by calling startResolutionForResult(),
+                        // and then check the result in onActivityResult()
                         ResolvableApiException resolvable = (ResolvableApiException) e;
                         resolvable.startResolutionForResult(cordova.getActivity(), locationContext.getId());
                     } catch (IntentSender.SendIntentException sendEx) {
