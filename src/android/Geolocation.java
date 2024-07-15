@@ -296,7 +296,7 @@ public class Geolocation extends CordovaPlugin implements OnLocationResultEventL
                     // by showing the user a dialog.
                     try {
                         // to get the response for the resolution in onActivityResult
-                        setActivityCallback();
+                        cordova.setActivityResultCallback(Geolocation.this);
 
                         // to use this 'request' in onActivityResult
                         requestForResolvable = request;
@@ -332,6 +332,8 @@ public class Geolocation extends CordovaPlugin implements OnLocationResultEventL
                 PluginResult result = new PluginResult(PluginResult.Status.ERROR, LocationError.LOCATION_ENABLE_REQUEST_DENIED.toJSON());
                 lc.getCallbackContext().sendPluginResult(result);
                 locationContexts.delete(lc.getId());
+                requestForResolvable = null;
+                break;
             }
             case Activity.RESULT_OK: {
                 // request location updates because location was enabled
