@@ -42,8 +42,6 @@ public class Geolocation extends CordovaPlugin implements OnLocationResultEventL
     private FusedLocationProviderClient fusedLocationClient;
     private LocationRequest requestForResolvable;
 
-    protected static final int REQUEST_CHECK_SETTINGS = 0x1;
-
     public static final String[] permissions = {Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION};
 
     @Override
