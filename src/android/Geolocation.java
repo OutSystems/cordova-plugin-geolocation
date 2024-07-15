@@ -66,7 +66,6 @@ public class Geolocation extends CordovaPlugin implements OnLocationResultEventL
             // which doesn't work if we pass it a negative value
             int idHashCode = args.getString(3).hashCode();
             int id = idHashCode < 0 ? - idHashCode : idHashCode;
-
             LocationContext lc = new LocationContext(id, LocationContext.Type.RETRIEVAL, args, callbackContext, this);
             locationContexts.put(id, lc);
 
@@ -345,7 +344,6 @@ public class Geolocation extends CordovaPlugin implements OnLocationResultEventL
                 }
             }
         }
-
     }
 
     private void setActivityCallback() {
