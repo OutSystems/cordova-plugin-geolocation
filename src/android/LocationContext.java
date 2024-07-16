@@ -1,10 +1,16 @@
 package org.apache.cordova.geolocation;
 
 import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 
 import org.apache.cordova.CallbackContext;
 import org.json.JSONArray;
+
+@FunctionalInterface
+interface RetryCallback {
+    void execute();
+}
 
 public class LocationContext {
 
@@ -19,6 +25,7 @@ public class LocationContext {
     private CallbackContext callbackContext;
     private LocationCallback locationCallback;
     private final OnLocationResultEventListener listener;
+    private RetryCallback retryCallback;
 
     public LocationContext(int id, LocationContext.Type type, JSONArray executeArgs, CallbackContext callbackContext, OnLocationResultEventListener listener) {
         this.id = id;
@@ -40,6 +47,8 @@ public class LocationContext {
                 }
             }
         };
+
+        this.retryCallback = null;
     }
 
     public int getId() {
@@ -62,4 +71,16 @@ public class LocationContext {
         return locationCallback;
     }
 
+    public void setRetryOperation(RetryCallback callback) {
+        this.retryCallback = callback;
+    }
+
+    public boolean canRetry() {
+        return this.retryCallback != null;
+    }
+
+    public void executeRetryOperation() {
+        this.retryCallback.execute();
+        this.retryCallback = null;
+    }
 }
