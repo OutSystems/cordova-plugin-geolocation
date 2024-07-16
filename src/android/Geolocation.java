@@ -41,6 +41,9 @@ public class Geolocation extends CordovaPlugin implements OnLocationResultEventL
     private SparseArray<LocationContext> locationContexts;
     private FusedLocationProviderClient fusedLocationClient;
     private LocationRequest requestForResolvable;
+    private LocationContext locationContextForResolvable;
+
+    private static final int REQUEST_START_RESOLUTION = 0x1;
 
     public static final String[] permissions = {Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION};
 
@@ -58,11 +61,7 @@ public class Geolocation extends CordovaPlugin implements OnLocationResultEventL
         }
 
         if ("getLocation".equals(action)) {
-
-            // the hashCode can sometimes be negative
-            // we should avoid it to use it as the requestCode for startResolutionForResult,
-            // which doesn't work if we pass it a negative value
-            int id = getPositiveHashCode(args.getString(3));
+            int id = args.getString(3).hashCode();
             LocationContext lc = new LocationContext(id, LocationContext.Type.RETRIEVAL, args, callbackContext, this);
             locationContexts.put(id, lc);
 
@@ -73,11 +72,7 @@ public class Geolocation extends CordovaPlugin implements OnLocationResultEventL
             }
 
         } else if ("addWatch".equals(action)) {
-
-            // the hashCode can sometimes be negative
-            // we should avoid it to use it as the requestCode for startResolutionForResult,
-            // which doesn't work if we pass it a negative value
-            int id = getPositiveHashCode(args.getString(0));
+            int id = args.getString(0).hashCode();
             LocationContext lc = new LocationContext(id, LocationContext.Type.UPDATE, args, callbackContext, this);
             locationContexts.put(id, lc);
 
@@ -206,10 +201,7 @@ public class Geolocation extends CordovaPlugin implements OnLocationResultEventL
         String id = args.optString(0);
 
         if(id != null) {
-
-            // watch was created possibly turning the negative hashCode into a positive value
-            // so we must do the same to get the correct LocationContext
-            int requestId = getPositiveHashCode(id);
+            int requestId = id.hashCode();
             LocationContext lc = locationContexts.get(requestId);
 
             if(lc == null) {
@@ -296,13 +288,14 @@ public class Geolocation extends CordovaPlugin implements OnLocationResultEventL
                         // to get the response for the resolution in onActivityResult
                         cordova.setActivityResultCallback(Geolocation.this);
 
-                        // to use this 'request' in onActivityResult
+                        // to use these in onActivityResult
                         requestForResolvable = request;
+                        locationContextForResolvable = locationContext;
 
                         // Show the dialog to enable location by calling startResolutionForResult(),
                         // and then check the result in onActivityResult()
                         ResolvableApiException resolvable = (ResolvableApiException) e;
-                        resolvable.startResolutionForResult(cordova.getActivity(), locationContext.getId());
+                        resolvable.startResolutionForResult(cordova.getActivity(), REQUEST_START_RESOLUTION);
                     } catch (IntentSender.SendIntentException sendEx) {
                         // Ignore the error.
                     }
@@ -323,34 +316,28 @@ public class Geolocation extends CordovaPlugin implements OnLocationResultEventL
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
         super.onActivityResult(requestCode, resultCode, intent);
 
-        LocationContext lc = locationContexts.get(requestCode);
-
-        switch (resultCode) {
-            case Activity.RESULT_CANCELED: {
-                PluginResult result = new PluginResult(PluginResult.Status.ERROR, LocationError.LOCATION_ENABLE_REQUEST_DENIED.toJSON());
-                lc.getCallbackContext().sendPluginResult(result);
-                locationContexts.delete(lc.getId());
-                requestForResolvable = null;
-                break;
-            }
-            case Activity.RESULT_OK: {
-                // request location updates because location was enabled
-                if (requestForResolvable != null) {
-                    requestLocationUpdates(lc, requestForResolvable);
-                    requestForResolvable = null;
+        if (requestCode == REQUEST_START_RESOLUTION) {
+            switch (resultCode) {
+                case Activity.RESULT_CANCELED: {
+                    if (locationContextForResolvable != null) {
+                        PluginResult result = new PluginResult(PluginResult.Status.ERROR, LocationError.LOCATION_ENABLE_REQUEST_DENIED.toJSON());
+                        locationContextForResolvable.getCallbackContext().sendPluginResult(result);
+                        locationContexts.delete(locationContextForResolvable.getId());
+                        requestForResolvable = null;
+                        locationContextForResolvable = null;
+                    }
+                    break;
+                }
+                case Activity.RESULT_OK: {
+                    // request location updates because location was enabled
+                    if (requestForResolvable != null) {
+                        requestLocationUpdates(locationContextForResolvable, requestForResolvable);
+                        requestForResolvable = null;
+                        locationContextForResolvable = null;
+                    }
                 }
             }
         }
-    }
-
-    /**
-     * Gets an hashCode from a String, making it a positive value if necessary
-     * @param id String to be hashed
-     * @return hashCode as a positive integer value
-     */
-    private int getPositiveHashCode(String id) {
-        int idHashCode = id.hashCode();
-        return idHashCode < 0 ? - idHashCode : idHashCode;
     }
 
 }
