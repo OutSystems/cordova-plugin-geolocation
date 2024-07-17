@@ -36,14 +36,16 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.HashMap;
+import java.util.concurrent.CompletableFuture;
+
 public class Geolocation extends CordovaPlugin implements OnLocationResultEventListener {
 
     private SparseArray<LocationContext> locationContexts;
     private FusedLocationProviderClient fusedLocationClient;
-    private LocationRequest requestForResolvable;
-    private LocationContext locationContextForResolvable;
 
-    private static final int REQUEST_START_RESOLUTION = 0x1;
+    private static HashMap<Integer, CompletableFuture<Integer>> completableFutureMap = new HashMap<>();
+    private static int requestCodeCounter = 100;
 
     public static final String[] permissions = {Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION};
 
@@ -288,14 +290,26 @@ public class Geolocation extends CordovaPlugin implements OnLocationResultEventL
                         // to get the response for the resolution in onActivityResult
                         cordova.setActivityResultCallback(Geolocation.this);
 
-                        // to use these in onActivityResult
-                        requestForResolvable = request;
-                        locationContextForResolvable = locationContext;
+                        // use CompletableFuture to get callback from calling startResolutionForResult
+                        int requestCode = requestCodeCounter++;
+                        CompletableFuture<Integer> completableFuture = new CompletableFuture<>();
+                        completableFutureMap.put(requestCode, completableFuture);
+
+                        completableFuture.thenAccept(resolvableResult -> {
+                            if (resolvableResult == Activity.RESULT_OK) {
+                                requestLocationUpdates(locationContext, request);
+                            } else {
+                                PluginResult errorResult = new PluginResult(PluginResult.Status.ERROR, LocationError.LOCATION_ENABLE_REQUEST_DENIED.toJSON());
+                                locationContext.getCallbackContext().sendPluginResult(errorResult);
+                                locationContexts.delete(locationContext.getId());
+                            }
+                        });
 
                         // Show the dialog to enable location by calling startResolutionForResult(),
-                        // and then check the result in onActivityResult()
+                        // and then handle the result in onActivityResult
                         ResolvableApiException resolvable = (ResolvableApiException) e;
-                        resolvable.startResolutionForResult(cordova.getActivity(), REQUEST_START_RESOLUTION);
+                        resolvable.startResolutionForResult(cordova.getActivity(), requestCode);
+
                     } catch (IntentSender.SendIntentException sendEx) {
                         // Ignore the error.
                     }
@@ -312,31 +326,15 @@ public class Geolocation extends CordovaPlugin implements OnLocationResultEventL
         task.addOnFailureListener(checkLocationSettingsOnFailure);
     }
 
+    /**
+     * Used to handle the result of 'ResolvableApiException.startResolutionForResult'
+     */
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
         super.onActivityResult(requestCode, resultCode, intent);
-
-        if (requestCode == REQUEST_START_RESOLUTION) {
-            switch (resultCode) {
-                case Activity.RESULT_CANCELED: {
-                    if (locationContextForResolvable != null) {
-                        PluginResult result = new PluginResult(PluginResult.Status.ERROR, LocationError.LOCATION_ENABLE_REQUEST_DENIED.toJSON());
-                        locationContextForResolvable.getCallbackContext().sendPluginResult(result);
-                        locationContexts.delete(locationContextForResolvable.getId());
-                        requestForResolvable = null;
-                        locationContextForResolvable = null;
-                    }
-                    break;
-                }
-                case Activity.RESULT_OK: {
-                    // request location updates because location was enabled
-                    if (requestForResolvable != null) {
-                        requestLocationUpdates(locationContextForResolvable, requestForResolvable);
-                        requestForResolvable = null;
-                        locationContextForResolvable = null;
-                    }
-                }
-            }
+        CompletableFuture<Integer> completableFuture = completableFutureMap.remove(requestCode);
+        if (completableFuture != null) {
+            completableFuture.complete(resultCode);
         }
     }
 
