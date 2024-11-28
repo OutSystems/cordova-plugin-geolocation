@@ -352,8 +352,7 @@ public class Geolocation extends CordovaPlugin implements OnLocationResultEventL
             //  this ensures there's no unwanted location updates after clearing the watch
             fusedLocationClient.removeLocationUpdates(lc.getLocationCallback());
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
 }
