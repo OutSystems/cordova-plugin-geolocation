@@ -222,6 +222,9 @@ public class Geolocation extends CordovaPlugin implements OnLocationResultEventL
 
     @Override
     public void onLocationResultSuccess(LocationContext locationContext, LocationResult locationResult) {
+        if (isLocationContextInvalid(locationContext)) {
+            return;
+        }
         for (Location location : locationResult.getLocations()) {
             try {
                 JSONObject locationObject = LocationUtils.locationToJSON(location);
@@ -253,6 +256,9 @@ public class Geolocation extends CordovaPlugin implements OnLocationResultEventL
 
     @Override
     public void onLocationResultError(LocationContext locationContext, LocationError error) {
+        if (isLocationContextInvalid(locationContext)) {
+            return;
+        }
         PluginResult result = new PluginResult(PluginResult.Status.ERROR, error.toJSON());
 
         if (locationContext.getType() == LocationContext.Type.UPDATE) {
@@ -338,4 +344,16 @@ public class Geolocation extends CordovaPlugin implements OnLocationResultEventL
         }
     }
 
+    private boolean isLocationContextInvalid(LocationContext lc) {
+        if (lc.getType() == LocationContext.Type.UPDATE && locationContexts.indexOfKey(lc.getId()) < 0) {
+            // watch location context no longer present in array; this means that the watch has been cleared
+            //  but it's possible that it was cleared before the location update was requested
+            //  e.g. in case of a very low timeout on JavaScript side.
+            //  this ensures there's no unwanted location updates after clearing the watch
+            fusedLocationClient.removeLocationUpdates(lc.getLocationCallback());
+            return true;
+        } else {
+            return false;
+        }
+    }
 }
