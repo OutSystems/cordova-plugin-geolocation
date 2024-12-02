@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [4.0.1-OS13]
 ### Fixes
 - Fix on Android to stop location updates when watch times out quickly [RMET-2621](https://outsystemsrd.atlassian.net/browse/RMET-2621)
 
