@@ -28,7 +28,7 @@ var Position = require('./Position');
 var timers = {}; // list of timers in use
 
 // Returns default params, overrides if provided with values
-function parseParameters (options) {
+function parseParameters(options) {
     var opt = {
         maximumAge: 0,
         enableHighAccuracy: false,
@@ -55,11 +55,11 @@ function parseParameters (options) {
 }
 
 // Returns a timeout failure, closed over a specified timeout value and error callback.
-function createTimeout (errorCallback, timeout, isWatch, id) {
+function createTimeout(errorCallback, timeout, isWatch, id) {
     var t = setTimeout(function () {
         clearTimeout(t);
         t = null;
-        if(isWatch === true){
+        if (isWatch === true) {
             geolocation.clearWatch(id);
         }
         errorCallback({
@@ -83,71 +83,7 @@ var geolocation = {
         argscheck.checkArgs('fFO', 'geolocation.getCurrentPosition', arguments);
         options = parseParameters(options);
 
-        var id = utils.createUUID();
-
-        // Timer var that will fire an error callback if no position is retrieved from native
-        // before the "timeout" param provided expires
-        var timeoutTimer = { timer: null };
-
-        var win = function (p) {
-            clearTimeout(timeoutTimer.timer);
-            if (!(timeoutTimer.timer)) {
-                // Timeout already happened, or native fired error callback for
-                // this geo request.
-                // Don't continue with success callback.
-                return;
-            }
-            var pos = new Position(
-                {
-                    latitude: p.latitude,
-                    longitude: p.longitude,
-                    altitude: p.altitude,
-                    accuracy: p.accuracy,
-                    heading: p.heading,
-                    velocity: p.velocity,
-                    altitudeAccuracy: p.altitudeAccuracy
-                },
-                p.timestamp,
-                null
-            );
-            geolocation.lastPosition = pos;
-            successCallback(pos);
-        };
-        var fail = function (e) {
-            clearTimeout(timeoutTimer.timer);
-            timeoutTimer.timer = null;
-            var err = new PositionError(e.code, e.message);
-            if (errorCallback) {
-                errorCallback(err);
-            }
-        };
-
-        // Check our cached position, if its timestamp difference with current time is less than the maximumAge, then just
-        // fire the success callback with the cached position.
-        if (geolocation.lastPosition && options.maximumAge && (((new Date()).getTime() - geolocation.lastPosition.timestamp) <= options.maximumAge)) {
-            successCallback(geolocation.lastPosition);
-        // If the cached position check failed and the timeout was set to 0, error out with a TIMEOUT error object.
-        } else if (options.timeout === 0) {
-            fail({
-                code: PositionError.TIMEOUT,
-                message: "timeout value in PositionOptions set to 0 and no cached Position object available, or cached Position object's age exceeds provided PositionOptions' maximumAge parameter."
-            });
-        // Otherwise we have to call into native to retrieve a position.
-        } else {
-            if (options.timeout !== Infinity) {
-                // If the timeout value was not set to Infinity (default), then
-                // set up a timeout function that will fire the error callback
-                // if no successful position was retrieved before timeout expired.
-                timeoutTimer.timer = createTimeout(fail, options.timeout, false, null);
-            } else {
-                // This is here so the check in the win function doesn't mess stuff up
-                // may seem weird but this guarantees timeoutTimer is
-                // always truthy before we call into native
-                timeoutTimer.timer = true;
-            }
-            exec(win, fail, 'Geolocation', 'getLocation', [options.enableHighAccuracy, options.maximumAge, options.timeout, id]);
-        }
-        return timeoutTimer;
+        exec(successCallback, errorCallback, 'Geolocation', 'getLocation', [options.enableHighAccuracy, options.maximumAge, options.timeout, options.id]);
     },
     /**
      * Asynchronously watches the geolocation for changes to geolocation.  When a change occurs,
