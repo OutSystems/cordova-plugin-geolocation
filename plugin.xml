@@ -96,9 +96,10 @@ xmlns:android="http://schemas.android.com/apk/res/android"
         </js-module>
 
         <config-file target="config.xml" parent="/*">
-                <feature name="Geolocation">
-                    <param name="ios-package" value="CDVLocation"/>
-                </feature>
+            <feature name="Geolocation">
+                <param name="ios-package" value="CDVLocation"/>
+            </feature>
+            <preference name="SwiftVersion" value="5" />
         </config-file>
       
         <!-- Usage description of the Location for iOS 6+, mandatory since iOS 10 -->
