@@ -97,7 +97,7 @@ xmlns:android="http://schemas.android.com/apk/res/android"
 
         <config-file target="config.xml" parent="/*">
             <feature name="Geolocation">
-                <param name="ios-package" value="CDVLocation"/>
+                <param name="ios-package" value="OSGeolocation"/>
             </feature>
             <preference name="SwiftVersion" value="5" />
         </config-file>
@@ -112,9 +112,15 @@ xmlns:android="http://schemas.android.com/apk/res/android"
             <string>$LOCATION_WHENINUSE_USAGE_DESCRIPTION</string>
         </config-file>
 
-        <header-file src="src/ios/CDVLocation.h" />
-        <source-file src="src/ios/CDVLocation.m" />
-        <framework src="CoreLocation.framework" />
+        <source-file src="src/ios/OSGeolocationCallbackManager.swift" />
+        <source-file src="src/ios/OSGeolocationConstants.swift" />
+        <source-file src="src/ios/OSGeolocationError.swift" />
+        <source-file src="src/ios/OSGeolocationModels.swift" />
+        <source-file src="src/ios/OSGeolocationPlugin.swift" />
+        <source-file src="src/ios/OSGLOCConfigurationModel+Accuracy.swift" />
+        <source-file src="src/ios/OSGLOCPositionModel+JSONTransformer.swift" />
+
+        <framework src="src/ios/OSGeolocationLib.xcframework" embed="true" custom="true" />
 
     </platform>
 
